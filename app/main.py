@@ -3,7 +3,7 @@ from fastapi import FastAPI, Response, status
 from fastapi.exceptions import HTTPException
 # from fastapi.params import Body
 from pydantic import BaseModel
-from random import randrange
+# from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
@@ -59,21 +59,26 @@ async def root():
 
 @app.get("/posts")
 def get_posts():
-    return {"message": my_posts}
+    cusror.execute("""SELECT * FROM posts """)
+    posts = cusror.fetchall()
+    return {"message": posts}
 
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_post(post: Post):
-    post_dict = post.dict()
-    post_dict["id"] = randrange(0, 100000000)
-    my_posts.append(post_dict)
-    return {"message": post_dict}
+    cusror.execute("""INSERT INTO posts (title,content,published)
+    VALUES(%s, %s, %s) RETURNING * """,
+                   (post.title, post.content, post.published))
+    new_post = cusror.fetchone()
+    conn.commit()
+
+    return {"message": new_post}
 
 
 @app.get("/posts/{id}")
 def get_post(id: int, response: Response):
-    print(id)
-    post = find_post(id)
+    cusror.execute("""SELECT * FROM posts WHERE id= %s""", (str(id),))
+    post = cusror.fetchone()
     if not post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail='not found!!!')
@@ -84,11 +89,13 @@ def get_post(id: int, response: Response):
 
 @app.delete("/delete/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int):
-    index = find_index_post(id)
-    if index is None:
+    cusror.execute(
+        """DELETE FROM posts WHERE id= %s returning *""", (str(id),))
+    deleted_post = cusror.fetchone()
+    conn.commit()
+    if deleted_post is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f'id {id} not exits')
-    my_posts.pop(index)
     # return {"message": "post deleted"}
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
