@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, Response, status, Depends
 from fastapi.exceptions import HTTPException
 # from fastapi.params import Body
 from pydantic import BaseModel
@@ -7,6 +7,11 @@ from pydantic import BaseModel
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
+from . import models
+from .database import engine, get_db
+from sqlalchemy.orm import Session
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -112,3 +117,8 @@ def update_post(id: int, post: Post):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f'id {id} not exits')
     return {"data": updated_post}
+
+
+@app.get("/sqlalchemy")
+def get_post_alq(db: Session = Depends(get_db)):
+    return {"message": "success"}
