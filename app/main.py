@@ -103,7 +103,7 @@ def delete_post(id: int):
 @app.put("/posts/{id}")
 def update_post(id: int, post: Post):
     cusror.execute(
-        """UPDATE posts SET title=%s,content=%s,published=%s 
+        """UPDATE posts SET title=%s,content=%s,published=%s
         WHERE id= %s returning *""",
         (post.title, post.content, post.published, str(id),))
     updated_post = cusror.fetchone()
