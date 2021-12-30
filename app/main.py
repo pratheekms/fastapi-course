@@ -2,25 +2,18 @@
 from fastapi import FastAPI, Response, status, Depends
 from fastapi.exceptions import HTTPException
 # from fastapi.params import Body
-from pydantic import BaseModel
+
 # from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
-from . import models
+from . import models, schemas
 from .database import engine, get_db
 from sqlalchemy.orm import Session
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-
-
-class Post(BaseModel):
-    title: str
-    content: str
-    published: bool = True
-    # rating: Optional[int] = None
 
 
 while True:
@@ -71,7 +64,7 @@ def get_posts(db: Session = Depends(get_db)):
 
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_post(post: Post, db: Session = Depends(get_db)):
+def create_post(post: schemas.PostCreate, db: Session = Depends(get_db)):
     # cusror.execute("""INSERT INTO posts (title,content,published)
     # VALUES(%s, %s, %s) RETURNING * """,
     #                (post.title, post.content, post.published))
@@ -114,7 +107,8 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/posts/{id}")
-def update_post(id: int, updated_post: Post, db: Session = Depends(get_db)):
+def update_post(id: int, updated_post: schemas.PostCreate,
+                db: Session = Depends(get_db)):
     # cusror.execute(
     #     """UPDATE posts SET title=%s,content=%s,published=%s
     #     WHERE id= %s returning *""",
@@ -129,9 +123,3 @@ def update_post(id: int, updated_post: Post, db: Session = Depends(get_db)):
     post_query.update(updated_post.dict(), synchronize_session=False)
     db.commit()
     return {"data": post_query.first()}
-
-
-@app.get("/sqlalchemy")
-def get_post_alq(db: Session = Depends(get_db)):
-    posts = db.query(models.Post).all()
-    return {"message": posts}
