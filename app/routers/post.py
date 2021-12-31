@@ -9,7 +9,8 @@ from psycopg2.extras import RealDictCursor
 import time
 
 router = APIRouter(
-    prefix="/posts"
+    prefix="/posts",
+    tags=['Posts']
 )
 
 while True:
