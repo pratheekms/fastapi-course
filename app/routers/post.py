@@ -64,7 +64,8 @@ def create_post(post: schemas.PostCreate, db: Session = Depends(get_db),
     #                (post.title, post.content, post.published))
     # new_post = cusror.fetchone()
     # conn.commit()
-    new_post = models.Post(**post.dict())
+    
+    new_post = models.Post(owner_id=current_user.id,**post.dict())
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
@@ -92,12 +93,16 @@ def delete_post(id: int, db: Session = Depends(get_db),
     #     """DELETE FROM posts WHERE id= %s returning *""", (str(id),))
     # deleted_post = cusror.fetchone()
     # conn.commit()
-    deleted_post = db.query(models.Post).filter(models.Post.id == id)
-    if deleted_post.first() is None:
+    deleted_post_query = db.query(models.Post).filter(models.Post.id == id)
+    deleted_post=deleted_post_query.first()
+    if deleted_post is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f'id {id} not exits')
     # return {"message": "post deleted"}
-    deleted_post.delete(synchronize_session=False)
+    if deleted_post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Not authorised")
+
+    deleted_post_query.delete(synchronize_session=False)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -117,6 +122,8 @@ def update_post(id: int, updated_post: schemas.PostCreate,
     if post is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f'id {id} not exits')
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Not authorised")
     post_query.update(updated_post.dict(), synchronize_session=False)
     db.commit()
     return post_query.first()
