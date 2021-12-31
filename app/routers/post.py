@@ -48,10 +48,15 @@ def find_index_post(id):
 
 
 @router.get("/", response_model=List[schemas.Post])
-def get_posts(db: Session = Depends(get_db)):
+def get_posts(db: Session = Depends(get_db),current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
     # cusror.execute("""SELECT * FROM posts """)
     # posts = cusror.fetchall()
-    posts = db.query(models.Post).all()
+
+    #get all the post ir-respective of the user logged in
+    # posts = db.query(models.Post).all()
+
+    #get the posts of ONLY logged in user
+    posts = db.query(models.Post).filter(models.Post.owner_id==current_user.id).all()
     return posts
 
 
@@ -83,6 +88,8 @@ def get_post(id: int, response: Response, db: Session = Depends(get_db),
             status_code=status.HTTP_404_NOT_FOUND, detail='not found!!!')
         # response.status_code = status.HTTP_404_NOT_FOUND
         # return {"message": "post not found"}
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Not authorised")
     return post
 
 
