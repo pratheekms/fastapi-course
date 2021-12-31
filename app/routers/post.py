@@ -48,12 +48,12 @@ def find_index_post(id):
 
 
 @router.get("/", response_model=List[schemas.Post])
-def get_posts(db: Session = Depends(get_db)):#,current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
+def get_posts(db: Session = Depends(get_db),limit: int=10):#,current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
     # cusror.execute("""SELECT * FROM posts """)
     # posts = cusror.fetchall()
 
     #get all the post ir-respective of the user logged in
-    posts = db.query(models.Post).all()
+    posts = db.query(models.Post).limit(limit=limit).all()
 
     #get the posts of ONLY logged in user
     # posts = db.query(models.Post).filter(models.Post.owner_id==current_user.id).all()
