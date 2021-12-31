@@ -1,4 +1,4 @@
-# from typing import Optional
+from typing import List
 from fastapi import FastAPI, Response, status, Depends
 from fastapi.exceptions import HTTPException
 # from fastapi.params import Body
@@ -55,15 +55,16 @@ async def root():
     return {"message": "Hello World!!"}
 
 
-@app.get("/posts")
+@app.get("/posts", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db)):
     # cusror.execute("""SELECT * FROM posts """)
     # posts = cusror.fetchall()
     posts = db.query(models.Post).all()
-    return {"message": posts}
+    return posts
 
 
-@app.post("/posts", status_code=status.HTTP_201_CREATED)
+@app.post("/posts", status_code=status.HTTP_201_CREATED,
+          response_model=schemas.Post)
 def create_post(post: schemas.PostCreate, db: Session = Depends(get_db)):
     # cusror.execute("""INSERT INTO posts (title,content,published)
     # VALUES(%s, %s, %s) RETURNING * """,
@@ -74,10 +75,10 @@ def create_post(post: schemas.PostCreate, db: Session = Depends(get_db)):
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
-    return {"message": new_post}
+    return new_post
 
 
-@app.get("/posts/{id}")
+@app.get("/posts/{id}", response_model=schemas.Post)
 def get_post(id: int, response: Response, db: Session = Depends(get_db)):
     # cusror.execute("""SELECT * FROM posts WHERE id= %s""", (str(id),))
     # post = cusror.fetchone()
@@ -87,7 +88,7 @@ def get_post(id: int, response: Response, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND, detail='not found!!!')
         # response.status_code = status.HTTP_404_NOT_FOUND
         # return {"message": "post not found"}
-    return {"post details": post}
+    return post
 
 
 @app.delete("/delete/{id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -106,7 +107,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@app.put("/posts/{id}")
+@app.put("/posts/{id}", response_model=schemas.Post)
 def update_post(id: int, updated_post: schemas.PostCreate,
                 db: Session = Depends(get_db)):
     # cusror.execute(
@@ -122,4 +123,4 @@ def update_post(id: int, updated_post: schemas.PostCreate,
             status_code=status.HTTP_404_NOT_FOUND, detail=f'id {id} not exits')
     post_query.update(updated_post.dict(), synchronize_session=False)
     db.commit()
-    return {"data": post_query.first()}
+    return post_query.first()
