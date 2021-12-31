@@ -1,6 +1,6 @@
 
 from fastapi import Response, HTTPException, status, Depends, APIRouter
-from .. import models, schemas
+from .. import models, schemas, oauth2
 from ..database import get_db
 from sqlalchemy.orm import Session
 from typing import List
@@ -57,7 +57,8 @@ def get_posts(db: Session = Depends(get_db)):
 
 @router.post("/", status_code=status.HTTP_201_CREATED,
              response_model=schemas.Post)
-def create_post(post: schemas.PostCreate, db: Session = Depends(get_db)):
+def create_post(post: schemas.PostCreate, db: Session = Depends(get_db),
+                current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
     # cusror.execute("""INSERT INTO posts (title,content,published)
     # VALUES(%s, %s, %s) RETURNING * """,
     #                (post.title, post.content, post.published))
@@ -71,7 +72,8 @@ def create_post(post: schemas.PostCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{id}", response_model=schemas.Post)
-def get_post(id: int, response: Response, db: Session = Depends(get_db)):
+def get_post(id: int, response: Response, db: Session = Depends(get_db),
+             current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
     # cusror.execute("""SELECT * FROM posts WHERE id= %s""", (str(id),))
     # post = cusror.fetchone()
     post = db.query(models.Post).filter(models.Post.id == id).first()
@@ -84,7 +86,8 @@ def get_post(id: int, response: Response, db: Session = Depends(get_db)):
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int, db: Session = Depends(get_db)):
+def delete_post(id: int, db: Session = Depends(get_db),
+                current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
     # cusror.execute(
     #     """DELETE FROM posts WHERE id= %s returning *""", (str(id),))
     # deleted_post = cusror.fetchone()
@@ -101,7 +104,8 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
 @router.put("/{id}", response_model=schemas.Post)
 def update_post(id: int, updated_post: schemas.PostCreate,
-                db: Session = Depends(get_db)):
+                db: Session = Depends(get_db),
+                current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
     # cusror.execute(
     #     """UPDATE posts SET title=%s,content=%s,published=%s
     #     WHERE id= %s returning *""",
