@@ -3,29 +3,30 @@ from fastapi import Response, HTTPException, status, Depends, APIRouter
 from .. import models, schemas, oauth2
 from ..database import get_db
 from sqlalchemy.orm import Session
-from typing import List
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import time
+from typing import List, Optional
+# import psycopg2
+# from psycopg2.extras import RealDictCursor
+# import time
+from typing import Optional
 
 router = APIRouter(
     prefix="/posts",
     tags=['Posts']
 )
 
-while True:
+# while True:
 
-    try:
-        conn = psycopg2.connect(host='localhost', database='fastapi',
-                                user='postgres', password='postgres1',
-                                cursor_factory=RealDictCursor)
-        cusror = conn.cursor()
-        print('Database connection successful')
-        break
-    except Exception as error:
-        print('conenction failed')
-        print("Error:", error)
-        time.sleep(2)
+#     try:
+#         conn = psycopg2.connect(host='localhost', database='fastapi',
+#                                 user='postgres', password='postgres1',
+#                                 cursor_factory=RealDictCursor)
+#         cusror = conn.cursor()
+#         print('Database connection successful')
+#         break
+#     except Exception as error:
+#         print('conenction failed')
+#         print("Error:", error)
+#         time.sleep(2)
 
 
 my_posts = [{"title": "title of post 1",
@@ -35,25 +36,25 @@ my_posts = [{"title": "title of post 1",
             ]
 
 
-def find_post(id):
-    for p in my_posts:
-        if p["id"] == id:
-            return p
+# def find_post(id):
+#     for p in my_posts:
+#         if p["id"] == id:
+#             return p
 
 
-def find_index_post(id):
-    for i, p in enumerate(my_posts):
-        if p['id'] == id:
-            return i
+# def find_index_post(id):
+#     for i, p in enumerate(my_posts):
+#         if p['id'] == id:
+#             return i
 
 
 @router.get("/", response_model=List[schemas.Post])
-def get_posts(db: Session = Depends(get_db),limit: int=10):#,current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
+def get_posts(db: Session = Depends(get_db),limit: int=10,skip:int=0,search:Optional[str]=""):#,current_user: schemas.UserOut = Depends(oauth2.get_current_user)):
     # cusror.execute("""SELECT * FROM posts """)
     # posts = cusror.fetchall()
 
     #get all the post ir-respective of the user logged in
-    posts = db.query(models.Post).limit(limit=limit).all()
+    posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit=limit).offset(skip).all()
 
     #get the posts of ONLY logged in user
     # posts = db.query(models.Post).filter(models.Post.owner_id==current_user.id).all()
